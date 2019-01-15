@@ -84,10 +84,37 @@ the guest user's ID is always 0. Include in your output the name of the
 facility, the name of the member formatted as a single column, and the cost.
 Order by descending cost, and do not use any subqueries. */
 
+SELECT f.name AS facilityname, CONCAT(m.firstname, ' ', m.surname) AS membername, 
+CASE WHEN m.firstname='GUEST' THEN (f.guestcost*b.slots)
+WHEN m.firstname !='GUEST' THEN (f.membercost*b.slots) END AS cost
+FROM Bookings b LEFT JOIN Members m ON b.memid=m.memid 
+LEFT JOIN Facilities f ON f.facid=b.facid
+WHERE b.starttime LIKE '2012-09-14%' 
+HAVING cost>30
+ORDER BY cost DESC
 
 /* Q9: This time, produce the same result as in Q8, but using a subquery. */
 
+SELECT sub.facilityname, sub.membername, sub.cost FROM
+(SELECT f.name AS facilityname, CONCAT(m.firstname, ' ', m.surname) AS membername, 
+CASE WHEN m.firstname='GUEST' THEN (f.guestcost*b.slots)
+WHEN m.firstname !='GUEST' THEN (f.membercost*b.slots) END AS cost
+FROM Bookings b LEFT JOIN Members m ON b.memid=m.memid 
+LEFT JOIN Facilities f ON f.facid=b.facid
+WHERE b.starttime LIKE '2012-09-14%') AS sub
+WHERE sub.cost>30
+ORDER BY 3 DESC
 
 /* Q10: Produce a list of facilities with a total revenue less than 1000.
 The output of facility name and total revenue, sorted by revenue. Remember
 that there's a different cost for guests and members! */
+
+SELECT sub.facilityname, SUM(sub.cost) AS revenue FROM
+(SELECT f.name AS facilityname, 
+CASE WHEN m.firstname='GUEST' THEN (f.guestcost*b.slots)
+WHEN m.firstname !='GUEST' THEN (f.membercost*b.slots) END AS cost
+FROM Bookings b LEFT JOIN Members m ON b.memid=m.memid 
+LEFT JOIN Facilities f ON f.facid=b.facid) AS sub
+GROUP BY 1
+HAVING revenue<1000
+ORDER BY revenue
